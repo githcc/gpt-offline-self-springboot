@@ -22,8 +22,6 @@ public class GPTController {
             question = "who are you";
         }
         String prompt = "### Human:\n "+question+" \n### Assistant:";
-        System.out.println(prompt);
-        // 设置 LLModel.LIBRARY_SEARCH_PATH
         LLModel.LIBRARY_SEARCH_PATH = getResourcesFolderPath("lib");
 
         LLModel mptModel = new LLModel(Path.of(getResourcesFolderPath("models")+File.separator+model));
