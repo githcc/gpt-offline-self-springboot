@@ -2,8 +2,11 @@ package com.cc.gptselfspringboot.gpt4all;
 
 import jnr.ffi.Pointer;
 import jnr.ffi.byref.PointerByReference;
+import lombok.extern.slf4j.Slf4j;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.FluxSink;
 
 import java.io.ByteArrayOutputStream;
 import java.nio.charset.StandardCharsets;
@@ -12,6 +15,7 @@ import java.nio.file.Path;
 import java.util.*;
 import java.util.stream.Collectors;
 
+@Slf4j
 public  class LLModel implements AutoCloseable {
 
     /**
@@ -254,6 +258,28 @@ public  class LLModel implements AutoCloseable {
 
         return bufferingForWholeGeneration.toString(StandardCharsets.UTF_8);
     }
+    public Flux<String> generateStream(String prompt, GenerationConfig generationConfig, boolean streamToStdOut) {
+        return Flux.create(fluxSink -> {
+
+            ByteArrayOutputStream bufferingForStdOutStream = new ByteArrayOutputStream();
+            ByteArrayOutputStream bufferingForWholeGeneration = new ByteArrayOutputStream();
+            LLModelLibrary.ResponseCallback responseCallback = getResponseCallbackStream(streamToStdOut,bufferingForStdOutStream, bufferingForWholeGeneration ,fluxSink);
+            library.llmodel_prompt(this.model,
+                    prompt,
+                     (int tokenID) -> {
+                        if(LLModel.OUTPUT_DEBUG)
+                            log.info("token " + tokenID);
+                        return true; // continue processing
+                    },
+                    responseCallback,
+                    (boolean isRecalculating) -> {
+                        if(LLModel.OUTPUT_DEBUG)
+                            log.info("recalculating");
+                        return isRecalculating; // continue generating
+                    },
+                    generationConfig);
+        });
+    }
 
     /**
      * Callback method to be used by prompt method as text is generated.
@@ -304,6 +330,43 @@ public  class LLModel implements AutoCloseable {
 
             return true; // continue generating
         };
+    }
+     LLModelLibrary.ResponseCallback getResponseCallbackStream(boolean streamToStdOut, ByteArrayOutputStream bufferingForStdOutStream, ByteArrayOutputStream bufferingForWholeGeneration, FluxSink<String> fluxSink) {
+
+         return (int tokenID, Pointer response) -> {
+
+             if(LLModel.OUTPUT_DEBUG)
+                 log.info("Response token " + tokenID + " " );
+
+             if(tokenID==-1){
+                 throw new PromptIsTooLongException(response.getString(0, 1000, StandardCharsets.UTF_8));
+             }
+
+             long len = 0;
+             byte nextByte;
+             do{
+                 try {
+                     nextByte = response.getByte(len);
+                 } catch(IndexOutOfBoundsException e){
+                     throw new RuntimeException("Empty array or not null terminated");
+                 }
+                 len++;
+                 if(nextByte!=0) {
+                     bufferingForWholeGeneration.write(nextByte);
+                     bufferingForStdOutStream.write(nextByte);
+                     byte[] currentBytes = bufferingForStdOutStream.toByteArray();
+                     String validString = Util.getValidUtf8(currentBytes);
+                     if(validString!=null){
+                         bufferingForStdOutStream.reset();
+                         if(streamToStdOut){
+                             log.info(validString);
+                         }
+                         fluxSink.next(validString);
+                     }
+                 }
+             } while(nextByte != 0);
+             return true;
+         };
     }
 
     /**

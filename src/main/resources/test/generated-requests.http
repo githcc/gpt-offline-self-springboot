@@ -1,2 +1,16 @@
 ###
 GET http://localhost:8080/api/generateText/你可以做什么
+
+###
+POST http://localhost:8080/api/generateStream
+Content-Type: application/json
+
+[
+  {
+    "human": "奥巴马的政绩有哪些",
+    "assistant": "1. 提高了国内劳动力市场效率：奥巴马政府通过推动工业和服务业的自动化以及改善职业教育，使得更多人能够在短时间内获得适当的培训并找到合适的工作。\n 2. 扩大了公共医疗保险：奥巴马政府推动了《医疗保健改革法案》，使得更多人能够享受到医疗保险的覆盖。\n 3. 减少了贫困率：奥巴马政府通过提高最低工资和扩"
+  },
+  {
+    "human": "他哪一年出生"
+  }
+]
