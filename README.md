@@ -2,7 +2,7 @@
 个人使用的离线版gpt，模型需要自己另外下载
 
 ## 模型地址
-1. [mistral-7b-openorca.Q4_0.gguf](https://119.91.23.137/d/%F0%9F%88%B4%E6%88%91%E7%9A%84%E9%98%BF%E9%87%8C%E5%88%86%E4%BA%AB/Tacit0926/mistral-7b-openorca.mp4) 下载的文件为mp4，需要手动修改文件名称，阿里云盘限制不让分享gguf文件
+1. [mistral-7b-openorca.Q4_0.gguf](https://gpt4all.io/models/gguf/mistral-7b-openorca.Q4_0.gguf) 
 2. [官网](https://gpt4all.io/index.html)
 
 ## 使用
